@@ -10,4 +10,4 @@ The project utilizes the Credit Card Fraud Detection dataset, which contains tra
 To set up the project, clone the repository and install the required libraries:
 ```bash
 pip install -r requirements.txt
- python main.py
+python main.py
