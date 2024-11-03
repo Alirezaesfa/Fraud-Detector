@@ -14,6 +14,7 @@ pip install -r requirements.txt
 Run the main script to start processing transactions and detecting anomalies:
 ```bash
 python main.py
+
 ## **Future Work**
 We will explore advanced deep learning models, including autoencoders and LSTMs, to further improve detection accuracy. These models will help us capture complex fraud patterns and detect anomalies more effectively. Performance comparisons with the basic models will also be included.
 ## **Documentation**
