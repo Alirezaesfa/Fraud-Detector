@@ -1,109 +1,75 @@
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedShuffleSplit
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import RandomizedSearchCV
-import numpy as np
-from sklearn.utils import resample
+from sklearn.decomposition import PCA
+from sklearn.feature_selection import RFE
+from imblearn.over_sampling import SMOTE
 
-# Load the dataset
-data = pd.read_csv("creditcard.csv")
+# Load dataset with optimized memory and dtype handling
+data = pd.read_csv("creditcard.csv", low_memory=False)
+data = data.apply(lambda col: pd.to_numeric(col, errors='coerce') if col.dtype == 'object' else col)
+data = data.dropna()
 
-# Define features and target variable
-X = data.drop('Class', axis=1)
-y = data['Class']
+# Separate features and target variable
+X = data.drop("Class", axis=1)
+y = data["Class"]
 
-# Fill NaN values with 0
-data = data.fillna(0)
-
-# Ensure no NaNs in the target variable
+# Ensure no NaNs in target variable
 X = X[~y.isna()]
 y = y.dropna()
 
-# Handle class imbalance
-X_majority = X[y == 0]
-y_majority = y[y == 0]
-X_minority = X[y == 1]
-y_minority = y[y == 1]
+# Train-test split with stratification
+sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+train_index, test_index = next(sss.split(X, y))
+X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-# Upsample minority class
-X_minority_upsampled, y_minority_upsampled = resample(X_minority, y_minority, 
-                                                      replace=True,     
-                                                      n_samples=len(y_majority),    
-                                                      random_state=42) 
+# Apply SMOTE for class balancing
+sm = SMOTE(random_state=42)
+X_train, y_train = sm.fit_resample(X_train, y_train)
 
-X = pd.concat([X_majority, X_minority_upsampled])
-y = pd.concat([y_majority, y_minority_upsampled])
-
-# Split the data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Scale the features
+# Standardize data
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Define models
-rf_model = RandomForestClassifier(random_state=42)
-logreg_model = LogisticRegression(max_iter=1000, random_state=42)
-svm_model = SVC(random_state=42)
-knn_model = KNeighborsClassifier()
+# Optional: Dimensionality Reduction with PCA
+pca = PCA(n_components=0.95, random_state=42)
+X_train = pca.fit_transform(X_train)
+X_test = pca.transform(X_test)
 
-# Define parameter grids for each model
-rf_params = {'n_estimators': [50, 100], 'max_depth': [None, 10]}
-logreg_params = {'C': np.logspace(-3, 3, 5), 'penalty': ['l1', 'l2'], 'solver': ['liblinear']}
-svm_params = {'C': [0.1, 1], 'gamma': ['scale']}
-knn_params = {'n_neighbors': [3, 5], 'weights': ['uniform']}
+# Define parameter grids for RandomizedSearchCV for each model
+rf_params = {'n_estimators': [50, 100, 150], 'max_depth': [None, 10, 20, 30]}
+logreg_params = {'C': np.logspace(-3, 3, 10), 'penalty': ['l1', 'l2'], 'solver': ['liblinear']}
+svm_params = {'C': [0.1, 1, 10], 'gamma': ['scale', 'auto']}
+knn_params = {'n_neighbors': [3, 5, 7, 9], 'weights': ['uniform', 'distance']}
 
-# Perform RandomizedSearchCV for hyperparameter tuning
-rf_random_search = RandomizedSearchCV(rf_model, rf_params, n_iter=5, cv=2, random_state=42, n_jobs=-1)
-logreg_random_search = RandomizedSearchCV(logreg_model, logreg_params, n_iter=5, cv=2, random_state=42, n_jobs=-1)
-svm_random_search = RandomizedSearchCV(svm_model, svm_params, n_iter=5, cv=2, random_state=42, n_jobs=-1)
-knn_random_search = RandomizedSearchCV(knn_model, knn_params, n_iter=5, cv=2, random_state=42, n_jobs=-1)
+# Function to perform RandomizedSearchCV and output results
+def model_training(X_train, y_train, X_test, y_test, model, params, model_name):
+    random_search = RandomizedSearchCV(model, param_distributions=params, n_iter=5, scoring='f1', cv=3, n_jobs=-1, random_state=42)
+    random_search.fit(X_train, y_train)
+    best_model = random_search.best_estimator_
 
-# Train models
-rf_random_search.fit(X_train, y_train)
-logreg_random_search.fit(X_train, y_train)
-svm_random_search.fit(X_train, y_train)
-knn_random_search.fit(X_train, y_train)
+    # Predict and evaluate
+    y_pred = best_model.predict(X_test)
+    print(f"{model_name} Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+    print(f"{model_name} Classification Report:\n", classification_report(y_test, y_pred))
 
-# Make predictions
-rf_pred = rf_random_search.predict(X_test)
-logreg_pred = logreg_random_search.predict(X_test)
-svm_pred = svm_random_search.predict(X_test)
-knn_pred = knn_random_search.predict(X_test)
+# Train and evaluate each model
+print("Training Random Forest...")
+model_training(X_train, y_train, X_test, y_test, RandomForestClassifier(), rf_params, "Random Forest")
 
-# Generate classification reports
-rf_report = classification_report(y_test, rf_pred, output_dict=True)
-logreg_report = classification_report(y_test, logreg_pred, output_dict=True)
-svm_report = classification_report(y_test, svm_pred, output_dict=True)
-knn_report = classification_report(y_test, knn_pred, output_dict=True)
+print("Training Logistic Regression...")
+model_training(X_train, y_train, X_test, y_test, LogisticRegression(), logreg_params, "Logistic Regression")
 
-# Convert reports to DataFrames for saving
-rf_report_df = pd.DataFrame(rf_report).transpose()
-logreg_report_df = pd.DataFrame(logreg_report).transpose()
-svm_report_df = pd.DataFrame(svm_report).transpose()
-knn_report_df = pd.DataFrame(knn_report).transpose()
+print("Training Support Vector Machine...")
+model_training(X_train, y_train, X_test, y_test, SVC(), svm_params, "Support Vector Machine")
 
-# Save reports to CSV files
-rf_report_df.to_csv("rf_classification_report.csv")
-logreg_report_df.to_csv("logreg_classification_report.csv")
-svm_report_df.to_csv("svm_classification_report.csv")
-knn_report_df.to_csv("knn_classification_report.csv")
-
-# Print confusion matrices
-print("Random Forest Confusion Matrix:")
-print(confusion_matrix(y_test, rf_pred))
-
-print("Logistic Regression Confusion Matrix:")
-print(confusion_matrix(y_test, logreg_pred))
-
-print("Support Vector Machine Confusion Matrix:")
-print(confusion_matrix(y_test, svm_pred))
-
-print("K-Nearest Neighbors Confusion Matrix:")
-print(confusion_matrix(y_test, knn_pred))
+print("Training K-Nearest Neighbors...")
+model_training(X_train, y_train, X_test, y_test, KNeighborsClassifier(), knn_params, "K-Nearest Neighbors")
