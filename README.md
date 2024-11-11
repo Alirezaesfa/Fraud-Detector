@@ -9,6 +9,7 @@ The project utilizes the Credit Card Fraud Detection dataset, which contains tra
 ## Installation
 To set up the project, clone the repository and install the required libraries:
 ```bash
+git clone https://github.com/Alirezaesfa/Fraud-Detector.git
 pip install -r requirements.txt
 ```
 
