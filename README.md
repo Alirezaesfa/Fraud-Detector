@@ -21,6 +21,7 @@ pip install -r requirements.txt
 Run the models to start processing transactions and detecting anomalies:
 
 PS1: If you want to train your own dataset make sure you don't forget to change the names
+
 PS2: The Target variable is a class variable so if you are using another dataset do adjustments accordingly
 ### To run statistical models:
 ```bash
