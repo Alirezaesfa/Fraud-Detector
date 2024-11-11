@@ -18,9 +18,14 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-Run the main script to start processing transactions and detecting anomalies:
+Run the models to start processing transactions and detecting anomalies:
+### To run statistical models:
 ```bash
-python main.py
+python models.py
+```
+### To run neural models:
+```bash
+python NeuralModels.py
 ```
 
 ## Future Work
