@@ -32,6 +32,17 @@ python models.py
 python NeuralModels.py
 ```
 
+### To push all changes:
+```bash
+git add .
+git config --global user.name "YOURGITUSERNAME"
+git config --global user.email "YOUREMAIL"
+git commit -m "Leave a note about what you have changed"
+git push https://your_username:your_token@GIT URL TO YOUR REPO.git master
+
+
+```
+
 ## Future Work
 We will explore advanced deep learning models, including autoencoders and LSTMs, to further improve detection accuracy. These models will help us capture complex fraud patterns and detect anomalies more effectively. Performance comparisons with the basic models will also be included.
 
