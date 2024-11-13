@@ -14,7 +14,7 @@ git clone https://github.com/Alirezaesfa/Fraud-Detector.git
 ```
 ### And then install dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r Requirements.txt
 ```
 
 ## Usage
