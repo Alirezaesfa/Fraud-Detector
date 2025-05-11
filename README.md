@@ -1,4 +1,4 @@
-# Real-Time Anomaly Detection for Fraudulent Transactions
+# Anomaly Detection for Fraudulent Transactions
 
 ## Project Overview
 This project aims to develop a real-time anomaly detection system to identify fraudulent transactions using machine learning techniques. It leverages both basic and deep learning models to enhance accuracy and robustness in detecting fraud.
